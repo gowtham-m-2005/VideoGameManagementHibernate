@@ -9,7 +9,7 @@
         <property name="hibernate.connection.driver_class">org.postgresql.Driver</property>
         <property name="hibernate.connection.url">jdbc:postgresql://localhost:5432/VideoGames</property>
         <property name="hibernate.connection.username">your_postgres_username</property>
-        <property name="hibernate.connection.password">your_postgres_password@</property>
+        <property name="hibernate.connection.password">your_postgres_password</property>
 
         <property name="hibernate.hbm2ddl.auto">update</property>
         <property name="hibernate.show_sql">true</property>
