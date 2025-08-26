@@ -4,6 +4,7 @@
     import org.hibernate.SessionFactory;
     import org.hibernate.cfg.Configuration;
 
+    import java.util.InputMismatchException;
     import java.util.Scanner;
 
     public class Main {
@@ -18,14 +19,21 @@
         }
 
         private void run() {
-            SessionFactory sf = new Configuration()
-                    .addAnnotatedClass(VideoGame.class)
-                    .addAnnotatedClass(SystemRequirements.class)
-                    .addAnnotatedClass(VideoGamePrice.class)
-                    .addAnnotatedClass(VideoGameReviews.class)
-                    .addAnnotatedClass(Reviewer.class)
-                    .configure()
-                    .buildSessionFactory();
+            SessionFactory sf = null;
+            try {
+                sf = new Configuration()
+                        .addAnnotatedClass(VideoGame.class)
+                        .addAnnotatedClass(SystemRequirements.class)
+                        .addAnnotatedClass(VideoGamePrice.class)
+                        .addAnnotatedClass(VideoGameReviews.class)
+                        .addAnnotatedClass(Reviewer.class)
+                        .configure()
+                        .buildSessionFactory();
+            } catch (Exception e) {
+                System.err.println("Failed to create Session Factory: " + e.getMessage());
+                System.err.println("Check your hibernate.cfg.xml and database Connection");
+                System.exit(1);
+            }
 
             Scanner scanner = new Scanner(System.in);
 
@@ -36,7 +44,23 @@
             System.out.println("4.VideoGame Reviewer Details");
 
             System.out.println("Enter the choice");
-            int choice = scanner.nextInt();
+            int choice = 0;
+
+            while (choice==0) {
+                try {
+                    choice = scanner.nextInt();
+                    scanner.nextLine();
+
+                    if(choice < 1 || choice > 4){
+                        System.out.println("Please enter a number between 1 and 4");
+                        choice = 0;
+                    }
+                } catch (InputMismatchException e) {
+                    System.out.println("Invalid input. Please enter a number");
+                    scanner.nextLine();
+                    throw new RuntimeException(e);
+                }
+            }
 
             switch (choice) {
                 case 1 -> {
@@ -61,9 +85,7 @@
                     addVideoGameReviews(sf, gameId, reviewerId);
                     break;
                 }
-                case 4 -> {
-                    addReviewer(sf);
-                }
+                case 4 -> addReviewer(sf);
                 default -> System.out.println("Invalid choice");
             }
         }
@@ -75,10 +97,22 @@
         }
 
         private void addVideoGameReviews(SessionFactory sf, int gameId, int reviewerId) {
-            Reviewer reviewer = findReviewer(sf, gameId);
-            VideoGame game = findVideoGame(sf, gameId);
-            VideoGameReviews review = inputController.getVideoGameReviewFromInput(game, reviewer);
-            videoGameReviewsDAO.save(sf, review);
+            try {
+                Reviewer reviewer = findReviewer(sf, reviewerId);
+                if(reviewer == null){
+                    System.out.println("Reviewer with Id : "+ reviewerId + "not found");
+                    return;
+                }
+                VideoGame game = findVideoGame(sf, gameId);
+                if(game == null){
+                    System.out.println("Game with Id : "+ gameId + "not found");
+                    return;
+                }
+                VideoGameReviews review = inputController.getVideoGameReviewFromInput(game, reviewer);
+                videoGameReviewsDAO.save(sf, review);
+            } catch (Exception e) {
+                System.err.println("Failed to add Video game review : "+ e.getMessage());
+            }
         }
 
         private void addVideoGame(SessionFactory sf) {
@@ -97,8 +131,16 @@
         }
 
         private void addVideoGamePrice(SessionFactory sf, int gameId){
-            VideoGame game = findVideoGame(sf, gameId);
-            VideoGamePrice videoGamePrice = inputController.getVideoGamePriceFromInput(game);
-            videoGamePriceDAO.save(sf, videoGamePrice);
+            try {
+                VideoGame game = findVideoGame(sf, gameId);
+                if(game == null){
+                    System.out.println("Game with Id : " + gameId + " not found");
+                    return;
+                }
+                VideoGamePrice videoGamePrice = inputController.getVideoGamePriceFromInput(game);
+                videoGamePriceDAO.save(sf, videoGamePrice);
+            } catch (Exception e) {
+                System.err.println("Failed to add price " + e.getMessage());
+            }
         }
     }
